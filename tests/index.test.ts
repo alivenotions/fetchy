@@ -1,7 +1,8 @@
-import fetch from 'node-fetch'
+const fetch = require('cross-fetch')
 ;(window as any).fetch = fetch
 
 import fetchy, { createFetchyConfiguration } from '../src'
+import type { HTTPError, TimeoutError } from '../src'
 // ts-jest was complaining about the types and it
 // was not getting resolved by declaring a module.
 const createTestServer = require('create-test-server')
@@ -16,46 +17,39 @@ describe('fetchy hitting the server', () => {
     await server.close()
   })
 
-  it('should run the GET request', async (done) => {
+  it('should run the GET request', async () => {
     expect((await fetchy.get(server.url)).ok).toEqual(true)
-    done()
   })
 
-  it('should run the POST request', async (done) => {
+  it('should run the POST request', async () => {
     expect((await fetchy.post(server.url)).ok).toEqual(true)
-    done()
   })
 
-  it('should run the PUT request', async (done) => {
+  it('should run the PUT request', async () => {
     expect((await fetchy.put(server.url)).ok).toEqual(true)
-    done()
   })
 
-  it('should run the PATCH request', async (done) => {
+  it('should run the PATCH request', async () => {
     expect((await fetchy.patch(server.url)).ok).toEqual(true)
-    done()
   })
 
-  it('should run the DELETE request', async (done) => {
+  it('should run the DELETE request', async () => {
     expect((await fetchy.delete(server.url)).ok).toEqual(true)
-    done()
   })
 
-  it('should run the HEAD request', async (done) => {
+  it('should run the HEAD request', async () => {
     expect((await fetchy.head(server.url)).ok).toEqual(true)
-    done()
   })
 
-  it('should create an instance with a base url', async (done) => {
+  it('should create an instance with a base url', async () => {
     const api = createFetchyConfiguration({
       baseUrl: server.url,
     })
 
     expect((await api.get('/base')).ok).toEqual(true)
-    done()
   })
 
-  it('call the callback passed to the interceptor property before every request', async (done) => {
+  it('call the callback passed to the interceptor property before every request', async () => {
     const callback = jest.fn()
     const api = createFetchyConfiguration({
       baseUrl: server.url,
@@ -67,46 +61,42 @@ describe('fetchy hitting the server', () => {
     expect(callback).toHaveBeenCalledWith(`${server.url}/base`, { method: 'GET' })
     await api.get('/')
     expect(callback).toHaveBeenCalledTimes(2)
-    done()
   })
 
-  it('should throw if an invalid baseUrl is passed', async (done) => {
+  it('should throw if an invalid baseUrl is passed', async () => {
     expect.assertions(1)
     try {
       createFetchyConfiguration({
         baseUrl: 2 as any,
       })
-    } catch (e) {
+    } catch (e: unknown) {
       expect(e).toBeDefined()
     }
-    done()
   })
 
-  it('should throw if an invalid interceptor is passed', async (done) => {
+  it('should throw if an invalid interceptor is passed', async () => {
     expect.assertions(1)
     try {
       createFetchyConfiguration({
         interceptors: 2 as any,
       })
-    } catch (e) {
+    } catch (e: unknown) {
       expect(e).toBeDefined()
     }
-    done()
   })
 
-  it('should throw if init is not an object', async (done) => {
+  it('should throw if init is not an object', async () => {
     expect.assertions(1)
     try {
       createFetchyConfiguration({
         init: 2 as any,
       })
-    } catch (e) {
+    } catch (e: unknown) {
       expect(e).toBeDefined()
     }
-    done()
   })
 
-  it('should throw if slashes mismatch between baseUrl and the request url', async (done) => {
+  it('should throw if slashes mismatch between baseUrl and the request url', async () => {
     expect.assertions(2)
     try {
       const api = createFetchyConfiguration({
@@ -114,7 +104,7 @@ describe('fetchy hitting the server', () => {
       })
 
       await api.get('/base')
-    } catch (e) {
+    } catch (e: unknown) {
       expect(e).toBeDefined()
     }
 
@@ -124,13 +114,12 @@ describe('fetchy hitting the server', () => {
       })
 
       await api.get('base')
-    } catch (e) {
+    } catch (e: unknown) {
       expect(e).toBeDefined()
     }
-    done()
   })
 
-  it('should return the response body by calling transform helpers', async (done) => {
+  it('should return the response body by calling transform helpers', async () => {
     const api = createFetchyConfiguration({
       baseUrl: server.url,
     })
@@ -140,18 +129,16 @@ describe('fetchy hitting the server', () => {
 
     expect(resultJson).toEqual({ id: 1 })
     expect(resultText).toEqual('yo')
-    done()
   })
 
-  it('should override the second json argument if body is there in init', async (done) => {
+  it('should override the second json argument if body is there in init', async () => {
     const echoApi = `${server.url}/echo`
     const result = await fetchy.post(echoApi, { id: 1 }, { body: '1' }).text()
 
     expect(result).toEqual('1')
-    done()
   })
 
-  it('should timeout if the response takes longer than the timeout time', async (done) => {
+  it('should timeout if the response takes longer than the timeout time', async () => {
     const url = `${server.url}/twoSeconds`
 
     expect.assertions(3)
@@ -160,17 +147,16 @@ describe('fetchy hitting the server', () => {
       await fetchy.get(url, {}, 1000).text()
     } catch (e) {
       expect(e).toBeDefined()
-      expect(e.name).toEqual('TimeoutError')
+      expect((e as TimeoutError).name).toEqual('TimeoutError')
     }
 
     try {
       const res = await fetchy.get(url, {}, 3000).text()
       expect(res).toEqual('slow')
     } catch (e) {}
-    done()
   })
 
-  it('should respect the signal passed and the timeout controller for cancelling the request', async (done) => {
+  it('should respect the signal passed and the timeout controller for cancelling the request', async () => {
     const url = `${server.url}/twoSeconds`
 
     expect.assertions(2)
@@ -183,12 +169,11 @@ describe('fetchy hitting the server', () => {
       await fetchy.get(url, { signal: controller.signal }, 1000).text()
     } catch (e) {
       expect(e).toBeDefined()
-      expect(e.name).toEqual('AbortError')
+      expect((e as any).name).toEqual('AbortError')
     }
-    done()
   })
 
-  it('should throw an error on non 2xx status codes', async (done) => {
+  it('should throw an error on non 2xx status codes', async () => {
     const url = `${server.url}/error`
 
     expect.assertions(1)
@@ -198,10 +183,9 @@ describe('fetchy hitting the server', () => {
     } catch (e) {
       expect(e).toBeDefined()
     }
-    done()
   })
 
-  it('should get the error status code on non 2xx status codes', async (done) => {
+  it('should get the error status code on non 2xx status codes', async () => {
     const url = `${server.url}/error`
 
     expect.assertions(3)
@@ -209,14 +193,14 @@ describe('fetchy hitting the server', () => {
     try {
       await fetchy.delete(url).text()
     } catch (e) {
-      expect(e).toBeDefined()
-      expect(e.name).toBe('HTTPError')
-      expect(e.status).toBe(500)
+      const httpError = e as HTTPError
+      expect(httpError).toBeDefined()
+      expect(httpError.name).toBe('HTTPError')
+      expect(httpError.status).toBe(500)
     }
-    done()
   })
 
-  it('should merge the configured init and the one passed with http methods', async (done) => {
+  it('should merge the configured init and the one passed with http methods', async () => {
     let sentHeader: any
     const api = createFetchyConfiguration({
       baseUrl: server.url,
@@ -273,7 +257,6 @@ describe('fetchy hitting the server', () => {
     })
 
     expect(sentHeader).toEqual(expectedOutput2)
-    done()
   })
 })
 

@@ -12,7 +12,7 @@ import { validateDefaults, isHeadOrGet, appendToBaseUrl } from './helpers'
 
 const bodyTransform = ['arrayBuffer', 'blob', 'formData', 'json', 'text'] as const
 
-class HTTPError extends Error {
+export class HTTPError extends Error {
   status: number
 
   constructor(message: string, code: number) {
@@ -23,7 +23,7 @@ class HTTPError extends Error {
   }
 }
 
-class TimeoutError extends Error {
+export class TimeoutError extends Error {
   constructor() {
     super('Request timed out')
     this.name = 'TimeoutError'
